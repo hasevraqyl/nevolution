@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"nevolution/db"
 	"os"
 	"os/signal"
 	"strings"
@@ -30,10 +31,8 @@ func init() {
 
 var dg *discordgo.Session
 var (
-	integerOptionMinValue          = 0.0
-	dmPermission                   = false
-	defaultMemberPermissions int64 = discordgo.PermissionManageServer
-	commands                       = []*discordgo.ApplicationCommand{
+	integerOptionMinValue = 0.0
+	commands              = []*discordgo.ApplicationCommand{
 		{
 			Name:        "test",
 			Description: "test command",
@@ -62,6 +61,7 @@ var (
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			db.Rollback()
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{

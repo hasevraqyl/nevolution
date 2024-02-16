@@ -9,6 +9,7 @@
 *.dylib
 go.sum
 setup_secret.toml
+nev.db
 
 # Test binary, built with `go test -c`
 *.test
