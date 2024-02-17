@@ -1,9 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
-	"nevolution/db"
+	"nevolution/dab"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,6 +19,7 @@ type Init struct {
 }
 
 var info Init
+var d dab.Database
 
 func init() {
 	f := "setup_secret.toml"
@@ -27,49 +29,46 @@ func init() {
 	if _, err := toml.DecodeFile(f, &info); err != nil {
 		log.Fatal(err)
 	}
+	db, err := sql.Open("sqlite3", "nev.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	d = dab.Wrap(db)
 }
 
 var dg *discordgo.Session
 var (
-	integerOptionMinValue = 0.0
-	commands              = []*discordgo.ApplicationCommand{
+	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "test",
-			Description: "test command",
+			Name:        "rollback",
+			Description: "roll back",
 		},
 		{
-			Name:        "options",
-			Description: "Command for demonstrating options",
+			Name:        "add-grade",
+			Description: "Command for adding grades",
 			Options: []*discordgo.ApplicationCommandOption{
 
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "string-option",
-					Description: "String option",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Name:        "integer-option",
-					Description: "Integer option",
-					MinValue:    &integerOptionMinValue,
-					MaxValue:    10,
+					Name:        "add-grade",
+					Description: "Add a grade",
 					Required:    true,
 				},
 			},
 		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			db.Rollback()
+		"rollback": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			d.Rollback()
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "placeholder",
+					Content: "# успешно откачено",
 				},
 			})
 		},
-		"options": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"add-grade": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := i.ApplicationCommandData().Options
 			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
 			for _, opt := range options {
@@ -79,11 +78,8 @@ var (
 			b.WriteString("placeholder:\n")
 
 			if option, ok := optionMap["string-option"]; ok {
+				d.AddGrade(option.StringValue())
 				b.WriteString(option.StringValue())
-			}
-
-			if opt, ok := optionMap["integer-option"]; ok {
-				b.WriteString(fmt.Sprint(opt.IntValue()))
 			}
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
