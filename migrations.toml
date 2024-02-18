@@ -3,6 +3,8 @@ drop table if exists grades;
 drop table if exists niches;
 drop table if exists complexes;
 create table grades (id integer primary key, name text not null);
-create table niches (id integer primary key, grade_id integer not null, amount real not null);
+create table niches (id integer primary key, grade_id integer not null, amount integer not null, success integer not null);
+create table biomes (id integer primary key, name text not null, type text not null);
+create table biome_grades(id integer primary key, biome_id integer not null, grade_id integer not null, amount integer not null, success integer not null)
 create table complexes (id integer primary key, niche_id integer not null);
 """

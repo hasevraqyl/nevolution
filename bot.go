@@ -52,7 +52,25 @@ var (
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "add-grade",
-					Description: "Add a grade",
+					Description: "Добавить граду",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "add-biome",
+			Description: "Command for adding biomes",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "biome_name",
+					Description: "Название биома",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "biome_type",
+					Description: "Тип биома",
 					Required:    true,
 				},
 			},
@@ -78,13 +96,40 @@ var (
 			b.WriteString("placeholder:\n")
 
 			if option, ok := optionMap["string-option"]; ok {
-				d.AddGrade(option.StringValue())
-				b.WriteString(option.StringValue())
+				status := d.AddGrade(option.StringValue())
+				b.WriteString(status.Text(option.StringValue()))
 			}
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: b.String(),
+				},
+			})
+		},
+		"add-biome": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+			var b string
+			var b2 string
+			var textString string
+			if option, ok := optionMap["biome_type"]; ok {
+				status := d.AddBiomePreliminary(option.StringValue())
+				textString = status.Text(option.StringValue())
+				b = textString
+				if textString == option.StringValue() {
+					if option, ok := optionMap["biome_name"]; ok {
+						status := d.AddBiome(option.StringValue(), b)
+						b2 = (status.Text(option.StringValue()))
+					}
+				}
+			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b, b2),
 				},
 			})
 		},
