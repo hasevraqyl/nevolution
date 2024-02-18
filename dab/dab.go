@@ -9,11 +9,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type DB interface {
-	Rollback()
-	AddGrade()
-}
-
 type Database struct {
 	dt *sql.DB
 }
