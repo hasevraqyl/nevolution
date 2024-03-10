@@ -116,3 +116,64 @@ func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
 	}
 	return allClear
 }
+func (d Database) AddGradeToBiomePreliminary(biome string) (e myenum) {
+	rows, err := d.dt.Query("select name from biomes where name = ?", biome)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !rows.Next() {
+		return noElem
+	}
+	return allClear
+}
+
+func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
+	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	defer rows.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var grade_id int
+	if rows.Next() {
+		err = rows.Scan(&grade_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		return noElem
+	}
+	rows2, err := d.dt.Query("select id from biomes where name = ?", biome)
+	defer rows2.Close()
+	var biome_id int
+	if rows2.Next() {
+		err = rows.Scan(&biome_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	rows3, err := d.dt.Query("select amount from biome_grades where biome_id = ?, grade_id = ?", biome_id, grade_id)
+	defer rows3.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if rows3.Next() {
+		return redundantElem
+	}
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success, type) values(?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = s.Exec(biome_id, grade_id, 0, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return allClear
+}

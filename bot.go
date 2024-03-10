@@ -75,6 +75,24 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "grade-to-biome",
+			Description: "Command for adding grades to biomes",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "grade_name",
+					Description: "Название грады",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "biome_name",
+					Description: "Название биома",
+					Required:    true,
+				},
+			},
+		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"rollback": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -130,6 +148,33 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b, b2),
+				},
+			})
+		},
+		"grade-to-biome": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+			var b1 string
+			var b2 string
+			var textString string
+			if option, ok := optionMap["biome_name"]; ok {
+				status := d.AddGradeToBiomePreliminary(option.StringValue())
+				textString = status.Text(option.StringValue())
+				b1 = textString
+				if textString == option.StringValue() {
+					if option, ok := optionMap["grade_name"]; ok {
+						status := d.AddGradeToBiome(option.StringValue(), b1)
+						b2 = (status.Text(option.StringValue()))
+					}
+				}
+			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b1, b2),
 				},
 			})
 		},
