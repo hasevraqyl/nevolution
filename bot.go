@@ -33,7 +33,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 	d = dab.Wrap(db)
 }
 
@@ -199,6 +198,7 @@ func init() {
 }
 
 func main() {
+	defer d.CloseDB()
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 	err := dg.Open()
 	if err != nil {

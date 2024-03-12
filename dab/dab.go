@@ -59,6 +59,9 @@ func (d Database) Rollback() {
 		log.Fatal(err)
 	}
 }
+func (d Database) CloseDB() {
+	d.dt.Close()
+}
 
 func (d Database) AddGrade(grade string) (e myenum) {
 	rows, err := d.dt.Query("select name from grades where  = ?", grade)
@@ -129,6 +132,9 @@ func (d Database) AddGradeToBiomePreliminary(biome string) (e myenum) {
 
 func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rows.Close()
 	if err != nil {
 		log.Fatal(err)
@@ -143,6 +149,9 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 		return noElem
 	}
 	rows2, err := d.dt.Query("select id from biomes where name = ?", biome)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rows2.Close()
 	var biome_id int
 	if rows2.Next() {
@@ -152,6 +161,9 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 		}
 	}
 	rows3, err := d.dt.Query("select amount from biome_grades where biome_id = ?, grade_id = ?", biome_id, grade_id)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rows3.Close()
 	if err != nil {
 		log.Fatal(err)
