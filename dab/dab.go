@@ -188,4 +188,9 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 		log.Fatal(err)
 	}
 	return allClear
+	//is this how you write comments here?
+	//
+	//
+	//
+	//
 }
