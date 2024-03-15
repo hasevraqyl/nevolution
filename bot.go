@@ -44,6 +44,10 @@ var (
 			Description: "roll back",
 		},
 		{
+			Name:        "meteor",
+			Description: "бум бабах",
+		},
+		{
 			Name:        "add-grade",
 			Description: "Command for adding grades",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -174,6 +178,15 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b1, b2),
+				},
+			})
+		},
+		"meteor": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			d.Meteor()
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "# бомбануло",
 				},
 			})
 		},

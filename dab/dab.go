@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	_ "github.com/mattn/go-sqlite3"
@@ -193,4 +195,41 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	//
 	//
 	//
+}
+
+func (d Database) Meteor() (e myenum) {
+	rows, err := d.dt.Query("select amount, id from biome_grades")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+	for rows.Next() {
+		var number int
+		var id int
+		rows.Scan(&number, &id)
+		r.Int63n(3)
+		i := int64(number) - (r.Int63n(3) + 3)
+		if i < 0 {
+			i = 0
+		}
+		tx, err := d.dt.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		s, err := tx.Prepare("update biome_grades set amount = ? where id = ?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = s.Exec(number, i)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tx.Commit()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return allClear
 }
