@@ -36,6 +36,7 @@ func init() {
 	d = dab.Wrap(db)
 }
 
+// opwdckijmiipweojwejoi
 var dg *discordgo.Session
 var (
 	commands = []*discordgo.ApplicationCommand{
