@@ -190,11 +190,6 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 		log.Fatal(err)
 	}
 	return allClear
-	//is this how you write comments here?
-	//
-	//
-	//
-	//
 }
 
 func (d Database) Meteor() (e myenum) {
@@ -209,8 +204,7 @@ func (d Database) Meteor() (e myenum) {
 		var number int
 		var id int
 		rows.Scan(&number, &id)
-		r.Int63n(3)
-		i := int64(number) - (r.Int63n(3) + 3)
+		i := int64(number) - (r.Int63n(300) + 300)
 		if i < 0 {
 			i = 0
 		}
@@ -222,7 +216,37 @@ func (d Database) Meteor() (e myenum) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		_, err = s.Exec(number, i)
+		_, err = s.Exec(i, id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tx.Commit()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return allClear
+}
+
+func (d Database) Turn() (e myenum) {
+	rows, err := d.dt.Query("select amount, id from biome_grades")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var number int
+		var id int
+		rows.Scan(&number, &id)
+		tx, err := d.dt.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		s, err := tx.Prepare("update biome_grades set amount = ? where id = ?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = s.Exec(number*2, id)
 		if err != nil {
 			log.Fatal(err)
 		}

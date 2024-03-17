@@ -42,7 +42,11 @@ var (
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "rollback",
-			Description: "roll back",
+			Description: "откатывает",
+		},
+		{
+			Name:        "turn",
+			Description: "делает ход",
 		},
 		{
 			Name:        "meteor",
@@ -188,6 +192,15 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "# бомбануло",
+				},
+			})
+		},
+		"turn": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			d.Turn()
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "# ход сделан",
 				},
 			})
 		},
