@@ -102,9 +102,8 @@ var (
 			},
 		},
 		{
-			Name: "mutations"
-			
-		}
+			Name: "mutations",
+		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"rollback": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
