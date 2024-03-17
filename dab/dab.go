@@ -102,6 +102,7 @@ func (d Database) AddBiomePreliminary(biome_type string) (e myenum) {
 	}
 	return invalidElem
 }
+
 func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
 	tx, err := d.dt.Begin()
 	if err != nil {
