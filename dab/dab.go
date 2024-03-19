@@ -258,8 +258,33 @@ func (d Database) Turn() (e myenum) {
 	}
 	return allClear
 }
-
-func (d Database) GetGradeMutations(grade string) (mytations map[string]struct{}, e myenum) {
+func (d Database) StartMutation(grade string, mutation string) {
+	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var id int
+	for rows.Next() {
+		rows.Scan(&id)
+	}
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s, err := tx.Prepare("insert into mutations values (?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = s.Exec(id, mutation, 300)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, e myenum) {
 	m := make(map[string]struct{})
 	rows, err := d.dt.Query("select id from grades where name = ?", grade)
 	if err != nil {

@@ -244,7 +244,7 @@ var (
 							},
 							Label:    v,
 							Style:    discordgo.PrimaryButton,
-							CustomID: v,
+							CustomID: option.StringValue() + "|" + v,
 						})
 					}
 
@@ -263,6 +263,22 @@ var (
 					if err != nil {
 						fmt.Println("so this is where the problem lies...")
 						log.Fatal(err)
+					}
+					buttonHandlers := make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
+					for _, v := range absentMutations {
+						buttonHandlers[option.StringValue()+"|"+v] = func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+							d.StartMutation(option.StringValue(), v)
+							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("Начато исследование мутации %v в граде %v", v, option.StringValue()),
+								},
+							})
+							if err != nil {
+								fmt.Println("so this is where the problem lies... version 2")
+								log.Fatal(err)
+							}
+						}
 					}
 				} else {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
