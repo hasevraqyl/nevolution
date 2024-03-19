@@ -20,6 +20,7 @@ type Init struct {
 
 var info Init
 var d dab.Database
+var allMutations map[string]struct{}
 
 func init() {
 	f := "setup_secret.toml"
@@ -34,10 +35,14 @@ func init() {
 		log.Fatal(err)
 	}
 	d = dab.Wrap(db)
+	allMutations = make(map[string]struct{})
+	allMutations["kill"] = struct{}{}
+	allMutations["eat"] = struct{}{}
 }
 
 // opwdckijmiipweojwejoi
 var dg *discordgo.Session
+
 var (
 	commands = []*discordgo.ApplicationCommand{
 		{
@@ -59,8 +64,8 @@ var (
 
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "add-grade",
-					Description: "Добавить граду",
+					Name:        "grade_name",
+					Description: "Имя грады",
 					Required:    true,
 				},
 			},
@@ -102,7 +107,15 @@ var (
 			},
 		},
 		{
-			Name: "mutations",
+			Name:        "new-mutation",
+			Description: "Command for adding mutations to grades",
+			Options: []*discordgo.ApplicationCommandOption{
+				{Type: discordgo.ApplicationCommandOptionString,
+					Name:        "grade_name",
+					Description: "Название грады",
+					Required:    true,
+				},
+			},
 		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -122,10 +135,11 @@ var (
 				optionMap[opt.Name] = opt
 			}
 			var b strings.Builder
-			b.WriteString("placeholder:\n")
-
-			if option, ok := optionMap["string-option"]; ok {
+			if option, ok := optionMap["grade_name"]; ok {
 				status := d.AddGrade(option.StringValue())
+				if status == 1 {
+					b.WriteString("Grade added:\n")
+				}
 				b.WriteString(status.Text(option.StringValue()))
 			}
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -206,6 +220,59 @@ var (
 					Content: "# ход сделан",
 				},
 			})
+		},
+		"new-mutation": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+			var absentMutations []string
+			if option, ok := optionMap["grade_name"]; ok {
+				b, status := d.GetGradeMutations(option.StringValue())
+				if status == 1 {
+					for key := range allMutations {
+						if _, ok := b[key]; !ok {
+							absentMutations = append(absentMutations, key)
+						}
+					}
+					var cmp []discordgo.MessageComponent
+					for _, v := range absentMutations {
+						cmp = append(cmp, discordgo.Button{
+							Emoji: discordgo.ComponentEmoji{
+								Name: "😭",
+							},
+							Label:    v,
+							Style:    discordgo.PrimaryButton,
+							CustomID: v,
+						})
+					}
+
+					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: fmt.Sprintf("блядь поггль это пездец, два часа над этим корчусь. энивей, следующие мутации доступны для грады %v, выберите одну", option.StringValue()),
+							Flags:   discordgo.MessageFlagsEphemeral,
+							Components: []discordgo.MessageComponent{
+								discordgo.ActionsRow{
+									Components: cmp,
+								},
+							},
+						},
+					})
+					if err != nil {
+						fmt.Println("so this is where the problem lies...")
+						log.Fatal(err)
+					}
+				} else {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "произошла какая-то хрень",
+						},
+					})
+				}
+			}
 		},
 	}
 )

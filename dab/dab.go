@@ -26,7 +26,7 @@ type Database struct {
 }
 
 type Migration struct {
-	migration string
+	Rollback string
 }
 
 var info Migration
@@ -47,7 +47,7 @@ func (e myenum) Text(text string) string {
 	}
 }
 func (d Database) Rollback() {
-	f := "migrations.toml"
+	f := "./migrations.toml"
 	if _, err := os.Stat(f); err != nil {
 		log.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func (d Database) Rollback() {
 		log.Fatal(err)
 	}
 	os.Remove("./nev.db")
-	sqlStmt := info.migration
+	sqlStmt := info.Rollback
 	_, err := d.dt.Exec(sqlStmt)
 	if err != nil {
 		log.Fatal(err)
@@ -66,7 +66,7 @@ func (d Database) CloseDB() {
 }
 
 func (d Database) AddGrade(grade string) (e myenum) {
-	rows, err := d.dt.Query("select name from grades where  = ?", grade)
+	rows, err := d.dt.Query("select name from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -257,4 +257,30 @@ func (d Database) Turn() (e myenum) {
 		}
 	}
 	return allClear
+}
+
+func (d Database) GetGradeMutations(grade string) (mytations map[string]struct{}, e myenum) {
+	m := make(map[string]struct{})
+	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var id int
+	if rows.Next() {
+		rows.Scan(&id)
+	} else {
+		return m, noElem
+	}
+	defer rows.Close()
+	rows2, err := d.dt.Query("select name from mutations where grade_id = ?", id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var mutation string
+		rows.Scan(&mutation)
+		m[mutation] = struct{}{}
+	}
+	return m, allClear
 }
