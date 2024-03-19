@@ -280,6 +280,11 @@ var (
 							}
 						}
 					}
+					dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+						if h, ok := buttonHandlers[i.ApplicationCommandData().Name]; ok {
+							h(s, i)
+						}
+					})
 				} else {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
