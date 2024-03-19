@@ -242,20 +242,6 @@ var (
 					if err != nil {
 						log.Fatal(err)
 					}
-					for _, v := range []string{"geysers, smokers, pelagial, freshwater, endolytes, atmosphere, littoral"} {
-						dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-							d.AddBiome(v, biome.StringValue())
-							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-								Type: discordgo.InteractionResponseChannelMessageWithSource,
-								Data: &discordgo.InteractionResponseData{
-									Content: fmt.Sprintf("Успешно добавлен биом %v типа %v", biome.StringValue(), v),
-								},
-							})
-							if err != nil {
-								log.Fatal(err)
-							}
-						})
-					}
 				}
 
 			}
