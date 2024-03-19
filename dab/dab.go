@@ -122,7 +122,7 @@ func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
 	}
 	return allClear
 }
-func (d Database) AddGradeToBiomePreliminary(biome string) (e myenum) {
+func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
 	rows, err := d.dt.Query("select name from biomes where name = ?", biome)
 	if err != nil {
 		log.Fatal(err)

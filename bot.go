@@ -43,6 +43,20 @@ func init() {
 // opwdckijmiipweojwejoi
 var dg *discordgo.Session
 
+func name(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	rows := strings.Split(i.MessageComponentData().CustomID, "|")
+	d.AddBiome(rows[1], rows[0])
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("Успешно добавлен биом %v типа %v", rows[0], rows[1]),
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 var (
 	commands = []*discordgo.ApplicationCommand{
 		{
@@ -78,12 +92,6 @@ var (
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "biome_name",
 					Description: "Название биома",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "biome_type",
-					Description: "Тип биома",
 					Required:    true,
 				},
 			},
@@ -155,26 +163,102 @@ var (
 			for _, opt := range options {
 				optionMap[opt.Name] = opt
 			}
-			var b string
-			var b2 string
-			var textString string
-			if option, ok := optionMap["biome_type"]; ok {
-				status := d.AddBiomePreliminary(option.StringValue())
-				textString = status.Text(option.StringValue())
-				b = textString
-				if textString == option.StringValue() {
-					if option, ok := optionMap["biome_name"]; ok {
-						status := d.AddBiome(option.StringValue(), b)
-						b2 = (status.Text(option.StringValue()))
+			if biome, ok := optionMap["biome_name"]; ok {
+				status := d.CheckIfBiomeExists(biome.StringValue())
+				if status == 2 {
+					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: fmt.Sprintf("Выберите тип биома %v.", biome.StringValue()),
+							Flags:   discordgo.MessageFlagsEphemeral,
+							Components: []discordgo.MessageComponent{
+								discordgo.ActionsRow{
+									Components: []discordgo.MessageComponent{
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "♨️",
+											},
+											Label:    "Гейзеры",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "geysers",
+										},
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "🚬",
+											},
+											Label:    "Курильщики",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "smokers",
+										},
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "🌊",
+											},
+											Label:    "Пелагиаль",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "pelagial",
+										},
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "💧",
+											},
+											Label:    "Пресные воды",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "freshwater",
+										},
+									},
+								},
+								discordgo.ActionsRow{
+									Components: []discordgo.MessageComponent{
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "🪨",
+											},
+											Label:    "Эндолиты",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "endolytes",
+										},
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "☁️",
+											},
+											Label:    "Атмосфера",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "atmosphere",
+										},
+										discordgo.Button{
+											Emoji: discordgo.ComponentEmoji{
+												Name: "🌀",
+											},
+											Label:    "Литораль",
+											Style:    discordgo.PrimaryButton,
+											CustomID: biome.StringValue() + "|" + "littoral",
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						log.Fatal(err)
+					}
+					for _, v := range []string{"geysers, smokers, pelagial, freshwater, endolytes, atmosphere, littoral"} {
+						dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+							d.AddBiome(v, biome.StringValue())
+							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("Успешно добавлен биом %v типа %v", biome.StringValue(), v),
+								},
+							})
+							if err != nil {
+								log.Fatal(err)
+							}
+						})
 					}
 				}
+
 			}
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b, b2),
-				},
-			})
 		},
 		"grade-to-biome": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := i.ApplicationCommandData().Options
@@ -186,7 +270,7 @@ var (
 			var b2 string
 			var textString string
 			if option, ok := optionMap["biome_name"]; ok {
-				status := d.AddGradeToBiomePreliminary(option.StringValue())
+				status := d.CheckIfBiomeExists(option.StringValue())
 				textString = status.Text(option.StringValue())
 				b1 = textString
 				if textString == option.StringValue() {
@@ -261,7 +345,6 @@ var (
 						},
 					})
 					if err != nil {
-						fmt.Println("so this is where the problem lies...")
 						log.Fatal(err)
 					}
 					buttonHandlers := make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
@@ -275,7 +358,6 @@ var (
 								},
 							})
 							if err != nil {
-								fmt.Println("so this is where the problem lies... version 2")
 								log.Fatal(err)
 							}
 						}
@@ -320,7 +402,9 @@ func init() {
 				h(s, i)
 			}
 		case discordgo.InteractionMessageComponent:
-			fmt.Println("we ain't doing shit")
+			if strings.Contains(i.MessageComponentData().CustomID, "|") {
+				name(s, i)
+			}
 		}
 	})
 }
