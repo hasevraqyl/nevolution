@@ -281,7 +281,7 @@ var (
 						}
 					}
 					dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-						if h, ok := buttonHandlers[i.ApplicationCommandData().Name]; ok {
+						if h, ok := buttonHandlers[i.MessageComponentData().CustomID]; ok {
 							h(s, i)
 						}
 					})
