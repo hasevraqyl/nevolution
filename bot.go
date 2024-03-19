@@ -40,12 +40,11 @@ func init() {
 	allMutations["eat"] = struct{}{}
 }
 
-// opwdckijmiipweojwejoi
 var dg *discordgo.Session
 
 func name(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	rows := strings.Split(i.MessageComponentData().CustomID, "|")
-	d.AddBiome(rows[1], rows[0])
+	d.AddBiome(rows[0], rows[1])
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -146,7 +145,7 @@ var (
 			if option, ok := optionMap["grade_name"]; ok {
 				status := d.AddGrade(option.StringValue())
 				if status == 1 {
-					b.WriteString("Grade added:\n")
+					b.WriteString("Добавлена града:")
 				}
 				b.WriteString(status.Text(option.StringValue()))
 			}
