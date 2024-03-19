@@ -134,7 +134,7 @@ func (d Database) AddGradeToBiomePreliminary(biome string) (e myenum) {
 }
 
 func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
-	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	} else {
 		return noElem
 	}
-	rows2, err := d.dt.Query("select id from biomes where name = ?", biome)
+	rows2, err := d.dt.Query("select _id from biomes where name = ?", biome)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 }
 
 func (d Database) Meteor() (e myenum) {
-	rows, err := d.dt.Query("select amount, id from biome_grades")
+	rows, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func (d Database) Meteor() (e myenum) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		s, err := tx.Prepare("update biome_grades set amount = ? where id = ?")
+		s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -230,7 +230,7 @@ func (d Database) Meteor() (e myenum) {
 }
 
 func (d Database) Turn() (e myenum) {
-	rows, err := d.dt.Query("select amount, id from biome_grades")
+	rows, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func (d Database) Turn() (e myenum) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		s, err := tx.Prepare("update biome_grades set amount = ? where id = ?")
+		s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -259,7 +259,7 @@ func (d Database) Turn() (e myenum) {
 	return allClear
 }
 func (d Database) StartMutation(grade string, mutation string) {
-	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func (d Database) StartMutation(grade string, mutation string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := tx.Prepare("insert into mutations values (?, ?, ?)")
+	s, err := tx.Prepare("insert into mutations (grade_id, name, points_left) values (?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -286,7 +286,7 @@ func (d Database) StartMutation(grade string, mutation string) {
 }
 func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, e myenum) {
 	m := make(map[string]struct{})
-	rows, err := d.dt.Query("select id from grades where name = ?", grade)
+	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}

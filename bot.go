@@ -281,8 +281,13 @@ var (
 						}
 					}
 					dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-						if h, ok := buttonHandlers[i.MessageComponentData().CustomID]; ok {
-							h(s, i)
+						switch i.Type {
+						case discordgo.InteractionApplicationCommand:
+							fmt.Println("we ain't doing shit")
+						case discordgo.InteractionMessageComponent:
+							if h, ok := buttonHandlers[i.MessageComponentData().CustomID]; ok {
+								h(s, i)
+							}
 						}
 					})
 				} else {
@@ -309,8 +314,13 @@ func init() {
 
 func init() {
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				h(s, i)
+			}
+		case discordgo.InteractionMessageComponent:
+			fmt.Println("we ain't doing shit")
 		}
 	})
 }
