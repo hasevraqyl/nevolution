@@ -42,13 +42,26 @@ func init() {
 
 var dg *discordgo.Session
 
-func name(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func biome(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	rows := strings.Split(i.MessageComponentData().CustomID, "|")
-	d.AddBiome(rows[0], rows[1])
+	d.AddBiome(rows[1], rows[2])
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Успешно добавлен биом %v типа %v", rows[0], rows[1]),
+			Content: fmt.Sprintf("Успешно добавлен биом %v типа %v", rows[1], rows[2]),
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func mutation(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	rows := strings.Split(i.MessageComponentData().CustomID, "|")
+	d.StartMutation(rows[1], rows[2])
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("Начато исследование мутации %v в граде %v", rows[2], rows[1]),
 		},
 	})
 	if err != nil {
@@ -179,7 +192,7 @@ var (
 											},
 											Label:    "Гейзеры",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "geysers",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "geysers",
 										},
 										discordgo.Button{
 											Emoji: discordgo.ComponentEmoji{
@@ -187,7 +200,7 @@ var (
 											},
 											Label:    "Курильщики",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "smokers",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "smokers",
 										},
 										discordgo.Button{
 											Emoji: discordgo.ComponentEmoji{
@@ -195,7 +208,7 @@ var (
 											},
 											Label:    "Пелагиаль",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "pelagial",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "pelagial",
 										},
 										discordgo.Button{
 											Emoji: discordgo.ComponentEmoji{
@@ -203,7 +216,7 @@ var (
 											},
 											Label:    "Пресные воды",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "freshwater",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "freshwater",
 										},
 									},
 								},
@@ -215,7 +228,7 @@ var (
 											},
 											Label:    "Эндолиты",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "endolytes",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "endolytes",
 										},
 										discordgo.Button{
 											Emoji: discordgo.ComponentEmoji{
@@ -223,7 +236,7 @@ var (
 											},
 											Label:    "Атмосфера",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "atmosphere",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "atmosphere",
 										},
 										discordgo.Button{
 											Emoji: discordgo.ComponentEmoji{
@@ -231,7 +244,7 @@ var (
 											},
 											Label:    "Литораль",
 											Style:    discordgo.PrimaryButton,
-											CustomID: biome.StringValue() + "|" + "littoral",
+											CustomID: "newb@|" + biome.StringValue() + "|" + "littoral",
 										},
 									},
 								},
@@ -306,17 +319,39 @@ var (
 						}
 					}
 					var cmp []discordgo.MessageComponent
-					for _, v := range absentMutations {
-						cmp = append(cmp, discordgo.Button{
-							Emoji: discordgo.ComponentEmoji{
-								Name: "😭",
-							},
-							Label:    v,
-							Style:    discordgo.PrimaryButton,
-							CustomID: option.StringValue() + "|" + v,
-						})
+					if len(absentMutations) > 5 {
+						var overarchingArray [][]string
+						c := (len(absentMutations) / 5) + 1
+						for i := 0; i < len(absentMutations)-c; {
+							overarchingArray = append(overarchingArray, absentMutations[i:i+c])
+							i = i + c
+						}
+						for _, v := range overarchingArray {
+							var comp []discordgo.MessageComponent
+							for _, v2 := range v {
+								comp = append(comp, discordgo.Button{
+									Emoji: discordgo.ComponentEmoji{
+										Name: "🧬",
+									},
+									Label:    v2,
+									Style:    discordgo.PrimaryButton,
+									CustomID: "newm@" + option.StringValue() + "|" + v2,
+								})
+							}
+							cmp = append(cmp, discordgo.ActionsRow{Components: comp})
+						}
+					} else {
+						for _, v := range absentMutations {
+							cmp = append(cmp, discordgo.Button{
+								Emoji: discordgo.ComponentEmoji{
+									Name: "🧬",
+								},
+								Label:    v,
+								Style:    discordgo.PrimaryButton,
+								CustomID: "newm@" + option.StringValue() + "|" + v,
+							})
+						}
 					}
-
 					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
@@ -332,31 +367,6 @@ var (
 					if err != nil {
 						log.Fatal(err)
 					}
-					buttonHandlers := make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
-					for _, v := range absentMutations {
-						buttonHandlers[option.StringValue()+"|"+v] = func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-							d.StartMutation(option.StringValue(), v)
-							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-								Type: discordgo.InteractionResponseChannelMessageWithSource,
-								Data: &discordgo.InteractionResponseData{
-									Content: fmt.Sprintf("Начато исследование мутации %v в граде %v", v, option.StringValue()),
-								},
-							})
-							if err != nil {
-								log.Fatal(err)
-							}
-						}
-					}
-					dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-						switch i.Type {
-						case discordgo.InteractionApplicationCommand:
-							fmt.Println("we ain't doing shit")
-						case discordgo.InteractionMessageComponent:
-							if h, ok := buttonHandlers[i.MessageComponentData().CustomID]; ok {
-								h(s, i)
-							}
-						}
-					})
 				} else {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -387,8 +397,10 @@ func init() {
 				h(s, i)
 			}
 		case discordgo.InteractionMessageComponent:
-			if strings.Contains(i.MessageComponentData().CustomID, "|") {
-				name(s, i)
+			if strings.Contains(i.MessageComponentData().CustomID, "|") && strings.Contains(i.MessageComponentData().CustomID, "newb@") {
+				biome(s, i)
+			} else if strings.Contains(i.MessageComponentData().CustomID, "|") && strings.Contains(i.MessageComponentData().CustomID, "newm@") {
+				mutation(s, i)
 			}
 		}
 	})
