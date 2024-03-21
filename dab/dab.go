@@ -29,6 +29,11 @@ type Migration struct {
 	Rollback string
 }
 
+type Grade struct {
+	numberTotal int
+	biomeTotal  int
+}
+
 var info Migration
 
 func Wrap(db *sql.DB) (d Database) {
@@ -230,20 +235,34 @@ func (d Database) Meteor() (e myenum) {
 }
 
 func (d Database) Turn() (e myenum) {
+	m := make(map[int]Grade)
 	rows, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
 	for rows.Next() {
 		var number int
 		var id int
 		rows.Scan(&number, &id)
-		tx, err := d.dt.Begin()
-		if err != nil {
-			log.Fatal(err)
+		if v, ok := m[id]; ok {
+			nv := Grade{
+				v.biomeTotal + 1,
+				v.numberTotal + number,
+			}
+			m[id] = nv
+		} else {
+			nv := Grade{
+				1,
+				number,
+			}
+			m[id] = nv
 		}
-		s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -256,6 +275,36 @@ func (d Database) Turn() (e myenum) {
 			log.Fatal(err)
 		}
 	}
+	txn, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	sn, err := txn.Prepare("update mutations set points_left = ? where grade_id = ? and points_left > 0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for k, v := range m {
+		var points int
+		rows2, err := d.dt.Query("select points_left from mutations where grade_id = ? and points_left > 0")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows2.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if rows2.Next() {
+			rows2.Scan(&points)
+		}
+		newpoints := points - (v.numberTotal/v.biomeTotal + 1)
+		if newpoints < 0 {
+			newpoints = 0
+		}
+		sn.Exec(newpoints, k)
+	}
+	tx.Commit()
+	txn.Commit()
+
 	return allClear
 }
 func (d Database) StartMutation(grade string, mutation string) {

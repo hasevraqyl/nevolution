@@ -138,6 +138,10 @@ var (
 			},
 		},
 		{
+			Name:        "turn",
+			Description: "Command for making a turn",
+		},
+		{
 			Name:        "new-mutation",
 			Description: "Command for adding mutations to grades",
 			Options: []*discordgo.ApplicationCommandOption{
