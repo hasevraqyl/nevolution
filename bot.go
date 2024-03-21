@@ -68,6 +68,17 @@ func mutation(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Fatal(err)
 	}
 }
+func mutButton(name string, mut string) (button discordgo.Button) {
+	return discordgo.Button{
+		Emoji: discordgo.ComponentEmoji{
+			Name: "🧬",
+		},
+		Label:    mut,
+		Style:    discordgo.PrimaryButton,
+		CustomID: "newm@|" + name + "|" + mut,
+	}
+
+}
 
 var (
 	commands = []*discordgo.ApplicationCommand{
@@ -329,27 +340,13 @@ var (
 						for _, v := range overarchingArray {
 							var comp []discordgo.MessageComponent
 							for _, v2 := range v {
-								comp = append(comp, discordgo.Button{
-									Emoji: discordgo.ComponentEmoji{
-										Name: "🧬",
-									},
-									Label:    v2,
-									Style:    discordgo.PrimaryButton,
-									CustomID: "newm@" + option.StringValue() + "|" + v2,
-								})
+								comp = append(comp, mutButton(option.StringValue(), v2))
 							}
 							cmp = append(cmp, discordgo.ActionsRow{Components: comp})
 						}
 					} else {
 						for _, v := range absentMutations {
-							cmp = append(cmp, discordgo.Button{
-								Emoji: discordgo.ComponentEmoji{
-									Name: "🧬",
-								},
-								Label:    v,
-								Style:    discordgo.PrimaryButton,
-								CustomID: "newm@" + option.StringValue() + "|" + v,
-							})
+							cmp = append(cmp, mutButton(option.StringValue(), v))
 						}
 					}
 					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
