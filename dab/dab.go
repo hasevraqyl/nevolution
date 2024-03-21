@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -306,6 +307,66 @@ func (d Database) Turn() (e myenum) {
 	txn.Commit()
 
 	return allClear
+}
+func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
+	var b string
+	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var id int
+	if rows.Next() {
+		rows.Scan(&id)
+	} else {
+		return b, noElem
+	}
+	rows2, err := d.dt.Query("select biome_id from biome_grades where grade_id = ?", id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows2.Close()
+	var info strings.Builder
+	info.WriteString("Града представлена в следующих биомах:")
+	for rows.Next() {
+		var biomeid int
+		rows2.Scan(&biomeid)
+		rows3, err := d.dt.Query("select name, type from biomes where biome_id = ?", biomeid)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows3.Close()
+		var name string
+		var ty string
+		if rows.Next() {
+			rows3.Scan(&name, &ty)
+		}
+		info.WriteString(fmt.Sprintf("\n %v, тип %v", name, ty))
+	}
+	rows4, err := d.dt.Query("select name, points_left from mutations where grade_id = ? and points_left > 0", id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows4.Close()
+	if rows4.Next() {
+		var name string
+		var points int
+		rows4.Scan(&name, &points)
+		info.WriteString(fmt.Sprintf("\nСейчас исследуется следующая мутация: %v. Осталось %v очков.", name, points))
+	}
+	info.WriteString("\nИмеются следующие мутации:")
+	rows5, err := d.dt.Query("select name, points left from mutations where grade_id = ? and points_left = 0", id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows5.Close()
+	for rows5.Next() {
+		var mut string
+		rows5.Scan(&mut)
+		info.WriteString(fmt.Sprintf("\n %v", mut))
+	}
+	b = info.String()
+	return b, allClear
 }
 func (d Database) StartMutation(grade string, mutation string) {
 	rows, err := d.dt.Query("select _id from grades where name = ?", grade)

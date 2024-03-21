@@ -142,6 +142,17 @@ var (
 			Description: "Command for making a turn",
 		},
 		{
+			Name:        "grade info",
+			Description: "Gives grade info",
+			Options: []*discordgo.ApplicationCommandOption{
+				{Type: discordgo.ApplicationCommandOptionString,
+					Name:        "grade_name",
+					Description: "Название грады",
+					Required:    true,
+				},
+			},
+		},
+		{
 			Name:        "new-mutation",
 			Description: "Command for adding mutations to grades",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -315,6 +326,28 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "# ход сделан",
+				},
+			})
+		},
+		"grade-info": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+			var r strings.Builder
+			if name, ok := optionMap["grade_name"]; ok {
+				str, status := d.GetGradeInto(name.StringValue())
+				if status == 2 {
+					r.WriteString(fmt.Sprintf("Грады %v не существует", name.StringValue()))
+				} else if status == 1 {
+					r.WriteString(str)
+				}
+			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: r.String(),
 				},
 			})
 		},
