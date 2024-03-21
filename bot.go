@@ -138,11 +138,7 @@ var (
 			},
 		},
 		{
-			Name:        "turn",
-			Description: "Command for making a turn",
-		},
-		{
-			Name:        "grade info",
+			Name:        "grade-info",
 			Description: "Gives grade info",
 			Options: []*discordgo.ApplicationCommandOption{
 				{Type: discordgo.ApplicationCommandOptionString,
@@ -290,24 +286,28 @@ var (
 			for _, opt := range options {
 				optionMap[opt.Name] = opt
 			}
-			var b1 string
-			var b2 string
-			var textString string
-			if option, ok := optionMap["biome_name"]; ok {
-				status := d.CheckIfBiomeExists(option.StringValue())
-				textString = status.Text(option.StringValue())
-				b1 = textString
-				if textString == option.StringValue() {
-					if option, ok := optionMap["grade_name"]; ok {
-						status := d.AddGradeToBiome(option.StringValue(), b1)
-						b2 = (status.Text(option.StringValue()))
+			var r strings.Builder
+			if biome, ok := optionMap["biome_name"]; ok {
+				status := d.CheckIfBiomeExists(biome.StringValue())
+				if status == 2 {
+					r.WriteString(fmt.Sprintf("Биома %v нет.", biome.StringValue()))
+				} else if status == 1 {
+					if grade, ok := optionMap["grade_name"]; ok {
+						status := d.AddGradeToBiome(biome.StringValue(), grade.StringValue())
+						if status == 2 {
+							r.WriteString(fmt.Sprintf("Грады %v нет.", grade.StringValue()))
+						} else if status == 4 {
+							r.WriteString(fmt.Sprintf("Града %v уже есть в биоме %v", grade.StringValue(), biome.StringValue()))
+						} else if status == 1 {
+							r.WriteString(fmt.Sprintf("Града %v добавлена в биом %v", grade.StringValue(), biome.StringValue()))
+						}
 					}
 				}
 			}
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Касательно типа: %v, касательно биома: %v", b1, b2),
+					Content: r.String(),
 				},
 			})
 		},
