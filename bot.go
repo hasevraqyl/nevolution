@@ -180,7 +180,7 @@ var (
 			if option, ok := optionMap["grade_name"]; ok {
 				status := d.AddGrade(option.StringValue())
 				if status == 1 {
-					b.WriteString("Добавлена града:")
+					b.WriteString("Успешно добавлена града ")
 				}
 				b.WriteString(status.Text(option.StringValue()))
 			}

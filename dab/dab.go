@@ -133,6 +133,7 @@ func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return noElem
 	}
@@ -169,7 +170,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 			log.Fatal(err)
 		}
 	}
-	rows3, err := d.dt.Query("select amount from biome_grades where biome_id = ?, grade_id = ?", biome_id, grade_id)
+	rows3, err := d.dt.Query("select amount from biome_grades where biome_id = ? and grade_id = ?", biome_id, grade_id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -184,7 +185,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success, type) values(?, ?, ?, ?)")
+	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success) values(?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -276,6 +277,7 @@ func (d Database) Turn() (e myenum) {
 			log.Fatal(err)
 		}
 	}
+	tx.Commit()
 	txn, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -303,7 +305,7 @@ func (d Database) Turn() (e myenum) {
 		}
 		sn.Exec(newpoints, k)
 	}
-	tx.Commit()
+
 	txn.Commit()
 
 	return allClear
