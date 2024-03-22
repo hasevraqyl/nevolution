@@ -313,7 +313,7 @@ var (
 										r.WriteString(fmt.Sprintf("Грады %v нет в биолме %v", grade.StringValue(), source.StringValue()))
 									} else if status == 1 {
 										_ = d.AddGradeToBiome(biome.StringValue(), grade.StringValue(), amount/3)
-										r.WriteString(fmt.Sprintf("Града %v колонизирует биом %v из биома %v", grade.StringValue(), biome.StringValue(), source.StringValue()))
+										r.WriteString(fmt.Sprintf("Града %v колонизирует биом %v из биома %v в количестве %v особей", grade.StringValue(), biome.StringValue(), source.StringValue(), amount/3))
 									}
 								}
 							}
