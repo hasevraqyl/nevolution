@@ -142,6 +142,7 @@ func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
 
 func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	tx, err := d.dt.Begin()
+	defer tx.Rollback()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -321,7 +322,12 @@ func (d Database) Turn() (e myenum) {
 }
 func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
 	var b string
-	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
+	tx, err := d.dt.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rows, err := tx.Query("select _id from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -332,29 +338,29 @@ func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
 	} else {
 		return b, noElem
 	}
-	rows2, err := d.dt.Query("select biome_id from biome_grades where grade_id = ?", id)
+	rows2, err := tx.Query("select biome_id from biome_grades where grade_id = ?", id)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows2.Close()
 	var info strings.Builder
 	info.WriteString("Града представлена в следующих биомах:")
-	for rows.Next() {
+	for rows2.Next() {
 		var biomeid int
 		rows2.Scan(&biomeid)
-		rows3, err := d.dt.Query("select name, type from biomes where biome_id = ?", biomeid)
+		rows3, err := tx.Query("select name, type from biomes where _id = ?", biomeid)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer rows3.Close()
 		var name string
 		var ty string
-		if rows.Next() {
+		if rows3.Next() {
 			rows3.Scan(&name, &ty)
 		}
 		info.WriteString(fmt.Sprintf("\n %v, тип %v", name, ty))
 	}
-	rows4, err := d.dt.Query("select name, points_left from mutations where grade_id = ? and points_left > 0", id)
+	rows4, err := tx.Query("select name, points_left from mutations where grade_id = ? and points_left > 0", id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -366,7 +372,7 @@ func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
 		info.WriteString(fmt.Sprintf("\nСейчас исследуется следующая мутация: %v. Осталось %v очков.", name, points))
 	}
 	info.WriteString("\nИмеются следующие мутации:")
-	rows5, err := d.dt.Query("select name, points left from mutations where grade_id = ? and points_left = 0", id)
+	rows5, err := tx.Query("select name, points_left from mutations where grade_id = ? and points_left = 0", id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -377,6 +383,7 @@ func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
 		info.WriteString(fmt.Sprintf("\n %v", mut))
 	}
 	b = info.String()
+	tx.Commit()
 	return b, allClear
 }
 func (d Database) StartMutation(grade string, mutation string) {
