@@ -135,6 +135,11 @@ var (
 					Description: "Название биома",
 					Required:    true,
 				},
+				{Type: discordgo.ApplicationCommandOptionString,
+					Name:        "source_biome",
+					Description: "Биом-источник",
+					Required:    true,
+				},
 			},
 		},
 		{
@@ -163,6 +168,7 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"rollback": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			d.Rollback()
+			d.DebugRemoveLater()
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -288,18 +294,29 @@ var (
 			}
 			var r strings.Builder
 			if biome, ok := optionMap["biome_name"]; ok {
-				status := d.CheckIfBiomeExists(biome.StringValue())
+				_, status := d.BiomeID(biome.StringValue())
 				if status == 2 {
-					r.WriteString(fmt.Sprintf("Биома %v нет.", biome.StringValue()))
+					r.WriteString(fmt.Sprintf("Биома %v нет", biome.StringValue()))
 				} else if status == 1 {
 					if grade, ok := optionMap["grade_name"]; ok {
-						status := d.AddGradeToBiome(biome.StringValue(), grade.StringValue())
+						gid, status := d.GradeID(grade.StringValue())
 						if status == 2 {
-							r.WriteString(fmt.Sprintf("Грады %v нет.", grade.StringValue()))
-						} else if status == 4 {
-							r.WriteString(fmt.Sprintf("Града %v уже есть в биоме %v", grade.StringValue(), biome.StringValue()))
+							r.WriteString(fmt.Sprintf("Грады %v нет", grade.StringValue()))
 						} else if status == 1 {
-							r.WriteString(fmt.Sprintf("Града %v добавлена в биом %v", grade.StringValue(), biome.StringValue()))
+							if source, ok := optionMap["source_biome"]; ok {
+								sid, status := d.BiomeID(source.StringValue())
+								if status == 2 {
+									r.WriteString(fmt.Sprintf("Биома %v нет", source.StringValue()))
+								} else if status == 1 {
+									amount, status := d.GradeAmount(gid, sid)
+									if status == 2 {
+										r.WriteString(fmt.Sprintf("Грады %v нет в биолме %v", grade.StringValue(), source.StringValue()))
+									} else if status == 1 {
+										_ = d.AddGradeToBiome(biome.StringValue(), grade.StringValue(), amount/3)
+										r.WriteString(fmt.Sprintf("Града %v колонизирует биом %v из биома %v", grade.StringValue(), biome.StringValue(), source.StringValue()))
+									}
+								}
+							}
 						}
 					}
 				}

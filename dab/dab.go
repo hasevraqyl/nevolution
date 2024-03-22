@@ -139,8 +139,67 @@ func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
 	}
 	return allClear
 }
-
-func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
+func (d Database) GradeID(grade string) (id int, e myenum) {
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query("select _id from grades where name = ?", grade)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var gid int
+	if rows.Next() {
+		rows.Scan(&gid)
+	} else {
+		return gid, noElem
+	}
+	tx.Commit()
+	return gid, allClear
+}
+func (d Database) BiomeID(biome string) (id int, e myenum) {
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query("select _id from biomes where name = ?", biome)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var gid int
+	if rows.Next() {
+		rows.Scan(&gid)
+	} else {
+		return gid, noElem
+	}
+	tx.Commit()
+	return gid, allClear
+}
+func (d Database) GradeAmount(gid int, bid int) (a int, e myenum) {
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query("select amount from biome_grades where grade_id = ? and biome_id = ?", gid, bid)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var amount int
+	if rows.Next() {
+		rows.Scan(&amount)
+	} else {
+		return amount, noElem
+	}
+	tx.Commit()
+	return amount, allClear
+}
+func (d Database) AddGradeToBiome(biome string, grade string, amount int) (e myenum) {
 	tx, err := d.dt.Begin()
 	defer tx.Rollback()
 	if err != nil {
@@ -194,7 +253,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	_, err = s.Exec(biome_id, grade_id, 0, 0)
+	_, err = s.Exec(biome_id, grade_id, amount, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -204,7 +263,39 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	}
 	return allClear
 }
+func (d Database) DebugRemoveLater() {
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query("select _id from grades where name = 'g'")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var gid int
+	if rows.Next() {
+		rows.Scan(&gid)
+	}
+	rows2, err := tx.Query("select _id from biomes where name = 'b'")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows2.Close()
+	var bid int
+	if rows2.Next() {
+		rows.Scan(&bid)
+	}
+	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success) values(?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
+	s.Exec(bid, gid, 100, 1)
+	tx.Commit()
 
+}
 func (d Database) Meteor() (e myenum) {
 	rows, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
