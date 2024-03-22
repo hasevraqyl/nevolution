@@ -141,7 +141,11 @@ func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
 }
 
 func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
-	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
+	tx, err := d.dt.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rows, err := tx.Query("select _id from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,7 +161,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	} else {
 		return noElem
 	}
-	rows2, err := d.dt.Query("select _id from biomes where name = ?", biome)
+	rows2, err := tx.Query("select _id from biomes where name = ?", biome)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -168,7 +172,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 			log.Fatal(err)
 		}
 	}
-	rows3, err := d.dt.Query("select amount from biome_grades where biome_id = ? and grade_id = ?", biome_id, grade_id)
+	rows3, err := tx.Query("select amount from biome_grades where biome_id = ? and grade_id = ?", biome_id, grade_id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -181,7 +185,6 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	rows.Close()
 	rows2.Close()
 	rows3.Close()
-	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
