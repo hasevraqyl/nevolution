@@ -145,7 +145,6 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,7 +161,6 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows2.Close()
 	var biome_id int
 	if rows2.Next() {
 		err = rows.Scan(&biome_id)
@@ -174,13 +172,15 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows3.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if rows3.Next() {
 		return redundantElem
 	}
+	rows.Close()
+	rows2.Close()
+	rows3.Close()
 	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -189,6 +189,7 @@ func (d Database) AddGradeToBiome(biome string, grade string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer s.Close()
 	_, err = s.Exec(biome_id, grade_id, 0, 0)
 	if err != nil {
 		log.Fatal(err)
@@ -224,6 +225,7 @@ func (d Database) Meteor() (e myenum) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer s.Close()
 		_, err = s.Exec(i, id)
 		if err != nil {
 			log.Fatal(err)
@@ -248,6 +250,10 @@ func (d Database) Turn() (e myenum) {
 		log.Fatal(err)
 	}
 	s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
 	for rows.Next() {
 		var number int
 		var id int
@@ -375,6 +381,7 @@ func (d Database) StartMutation(grade string, mutation string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	var id int
 	for rows.Next() {
 		rows.Scan(&id)
@@ -387,6 +394,7 @@ func (d Database) StartMutation(grade string, mutation string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer s.Close()
 	_, err = s.Exec(id, mutation, 300)
 	if err != nil {
 		log.Fatal(err)
