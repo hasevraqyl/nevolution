@@ -244,12 +244,15 @@ func (d Database) Meteor() (e myenum) {
 
 func (d Database) Turn() (e myenum) {
 	m := make(map[int]Grade)
-	rows, err := d.dt.Query("select amount, _id from biome_grades")
+	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
-	tx, err := d.dt.Begin()
+	defer tx.Rollback()
+	rows, err := tx.Query("select amount, _id from biome_grades")
+	if err != nil {
+		log.Fatal(err)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -282,23 +285,19 @@ func (d Database) Turn() (e myenum) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = tx.Commit()
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
-	tx.Commit()
-	txn, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	sn, err := txn.Prepare("update mutations set points_left = ? where grade_id = ? and points_left > 0")
+	rows.Close()
+	sn, err := tx.Prepare("update mutations set points_left = ? where grade_id = ? and points_left > 0")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer sn.Close()
 	for k, v := range m {
 		var points int
-		rows2, err := d.dt.Query("select points_left from mutations where grade_id = ? and points_left > 0")
+		rows2, err := d.dt.Query("select points_left from mutations where grade_id = ? and points_left > 0", k)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -315,9 +314,7 @@ func (d Database) Turn() (e myenum) {
 		}
 		sn.Exec(newpoints, k)
 	}
-
-	txn.Commit()
-
+	tx.Commit()
 	return allClear
 }
 func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
