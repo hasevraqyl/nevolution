@@ -296,6 +296,9 @@ func (d Database) DebugRemoveLater() {
 	tx.Commit()
 
 }
+func GetSuccess(gid int, biome string) (success int) {
+	return 10
+}
 func (d Database) Meteor() (e myenum) {
 	rows, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
@@ -340,7 +343,7 @@ func (d Database) Turn() (e myenum) {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query("select amount, _id from biome_grades")
+	rows, err := tx.Query("select amount, _id from biome_grades order by biome_id")
 	if err != nil {
 		log.Fatal(err)
 	}
