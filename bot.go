@@ -310,10 +310,14 @@ var (
 								} else if status == 1 {
 									amount, status := d.GradeAmount(gid, sid)
 									if status == 2 {
-										r.WriteString(fmt.Sprintf("Грады %v нет в биолме %v", grade.StringValue(), source.StringValue()))
+										r.WriteString(fmt.Sprintf("Грады %v нет в биоме %v", grade.StringValue(), source.StringValue()))
 									} else if status == 1 {
-										_ = d.AddGradeToBiome(biome.StringValue(), grade.StringValue(), amount/3)
-										r.WriteString(fmt.Sprintf("Града %v колонизирует биом %v из биома %v в количестве %v особей", grade.StringValue(), biome.StringValue(), source.StringValue(), amount/3))
+										status = d.AddGradeToBiome(biome.StringValue(), grade.StringValue(), amount/3)
+										if status == 4 {
+											r.WriteString(fmt.Sprintf("Града %v уже есть в биоме %v", grade.StringValue(), biome.StringValue()))
+										} else if status == 1 {
+											r.WriteString(fmt.Sprintf("Града %v колонизирует биом %v из биома %v в количестве %v особей", grade.StringValue(), biome.StringValue(), source.StringValue(), amount/3))
+										}
 									}
 								}
 							}

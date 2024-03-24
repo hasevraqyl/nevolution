@@ -114,6 +114,8 @@ func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer tx.Rollback()
+	fmt.Printf("inserting into biomes a biome call %v of type %v", biome_name, biome_type)
 	s, err := tx.Prepare("insert into biomes(name, type) values(?, ?)")
 	if err != nil {
 		log.Fatal(err)
@@ -227,7 +229,7 @@ func (d Database) AddGradeToBiome(biome string, grade string, amount int) (e mye
 	}
 	var biome_id int
 	if rows2.Next() {
-		err = rows.Scan(&biome_id)
+		err = rows2.Scan(&biome_id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -253,7 +255,7 @@ func (d Database) AddGradeToBiome(biome string, grade string, amount int) (e mye
 		log.Fatal(err)
 	}
 	defer s.Close()
-	_, err = s.Exec(biome_id, grade_id, amount, 0)
+	_, err = s.Exec(biome_id, grade_id, amount, GetSuccess(grade_id, "geysers"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -292,7 +294,7 @@ func (d Database) DebugRemoveLater() {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	s.Exec(bid, gid, 100, 1)
+	s.Exec(bid, gid, 100, 10)
 	tx.Commit()
 
 }
@@ -337,76 +339,91 @@ func (d Database) Meteor() (e myenum) {
 }
 
 func (d Database) Turn() (e myenum) {
-	m := make(map[int]Grade)
+	maxes := make(map[int]int)
+	mmu := make(map[int]Grade)
 	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query("select amount, _id from biome_grades order by biome_id")
+	rows, err := tx.Query("select distinct biome_id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
+	for rows.Next() {
+		var bid int
+		rows.Scan(&bid)
+		max, err := tx.Query("select MAX(success) from biome_grades where biome_id = ?", bid)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer max.Close()
+		var msuc int
+		if max.Next() {
+			max.Scan(&msuc)
+		}
+		maxes[bid] = msuc
+	}
+	rows2, err := tx.Query("select biome_id, grade_id, amount, success, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
+	defer rows2.Close()
+	ss, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ss.Close()
+	for rows2.Next() {
+		var bid, gid, am, suc, id, newam int
+		rows2.Scan(&bid, &gid, &am, &suc, &id)
+		max := maxes[bid]
+		if max == suc {
+			newam = (newam + suc)
+		} else {
+			newam = (newam + suc - max)
+			if newam < 0 {
+				newam = 0
+			}
+		}
+		fmt.Printf("SO basically we have the following: %v, %v, %v, %v", am, newam, suc, max)
+		ss.Exec(newam, id)
+		v, ok := mmu[gid]
+		if ok {
+			mmu[gid] = Grade{
+				v.biomeTotal + 1,
+				v.numberTotal + am,
+			}
+		} else {
+			mmu[gid] = Grade{
+				1,
+				am,
+			}
+		}
+	}
+	rows3, err := tx.Query("select _id, grade_id, points_left from mutations")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows3.Close()
+	s, err := tx.Prepare("update mutations set points_left = ? where _id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	for rows.Next() {
-		var number int
-		var id int
-		rows.Scan(&number, &id)
-		if v, ok := m[id]; ok {
-			nv := Grade{
-				v.biomeTotal + 1,
-				v.numberTotal + number,
+	for rows3.Next() {
+		var gid, pl, id, newpl int
+		rows3.Scan(&gid, &pl, &id)
+		mutg := mmu[gid]
+		mut := mutg.numberTotal/(mutg.biomeTotal*10) + 1
+		if pl > 0 {
+			newpl = pl - mut
+			if newpl < 0 {
+				newpl = 0
 			}
-			m[id] = nv
-		} else {
-			nv := Grade{
-				1,
-				number,
-			}
-			m[id] = nv
+			s.Exec(newpl, id)
 		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = s.Exec(number*2, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	rows.Close()
-	sn, err := tx.Prepare("update mutations set points_left = ? where grade_id = ? and points_left > 0")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer sn.Close()
-	for k, v := range m {
-		var points int
-		rows2, err := d.dt.Query("select points_left from mutations where grade_id = ? and points_left > 0", k)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows2.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-		if rows2.Next() {
-			rows2.Scan(&points)
-		}
-		newpoints := points - (v.numberTotal/v.biomeTotal + 1)
-		if newpoints < 0 {
-			newpoints = 0
-		}
-		sn.Exec(newpoints, k)
 	}
 	tx.Commit()
 	return allClear
