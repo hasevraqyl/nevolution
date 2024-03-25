@@ -444,7 +444,7 @@ func init() {
 	}
 }
 
-func init() {
+func main() {
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
@@ -459,9 +459,6 @@ func init() {
 			}
 		}
 	})
-}
-
-func main() {
 	defer d.CloseDB()
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 	err := dg.Open()
@@ -481,15 +478,16 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	fmt.Println("\n Bot running.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
-	fmt.Println("removing commands...")
+	fmt.Println("\n removing commands...")
 	for _, v := range registeredCommands {
 		err := dg.ApplicationCommandDelete(dg.State.User.ID, info.GuildID, v.ID)
 		if err != nil {
 			log.Panicf("cannot delete '%v' command: %v", v.Name, err)
 		}
 	}
-	fmt.Println("shutdown.")
+	fmt.Println("\n shutdown.")
 }
