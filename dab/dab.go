@@ -28,6 +28,7 @@ type Database struct {
 
 type Migration struct {
 	Rollback string
+	Upstart  string
 }
 
 type Grade struct {
@@ -66,6 +67,11 @@ func (d Database) Rollback() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	nsqlStmt := info.Upstart
+	_, err = d.dt.Exec(nsqlStmt)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 func (d Database) CloseDB() {
 	d.dt.Close()
@@ -97,16 +103,6 @@ func (d Database) AddGrade(grade string) (e myenum) {
 		log.Fatal(err)
 	}
 	return allClear
-}
-
-func (d Database) AddBiomePreliminary(biome_type string) (e myenum) {
-	b_t_l := []string{"гейзеры", "курильщики", "пелагиаль", "пресные воды", "эндолиты", "атмосфера", "литораль"}
-	for _, v := range b_t_l {
-		if biome_type == v {
-			return allClear
-		}
-	}
-	return invalidElem
 }
 
 func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
