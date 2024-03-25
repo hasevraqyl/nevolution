@@ -204,7 +204,7 @@ var (
 				optionMap[opt.Name] = opt
 			}
 			if biome, ok := optionMap["biome_name"]; ok {
-				status := d.CheckIfBiomeExists(biome.StringValue())
+				_, status := d.BiomeID(biome.StringValue())
 				if status == 2 {
 					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -358,7 +358,7 @@ var (
 			}
 			var r strings.Builder
 			if name, ok := optionMap["grade_name"]; ok {
-				str, status := d.GetGradeInto(name.StringValue())
+				str, status := d.GetGradeInfo(name.StringValue())
 				if status == 2 {
 					r.WriteString(fmt.Sprintf("Грады %v не существует", name.StringValue()))
 				} else if status == 1 {

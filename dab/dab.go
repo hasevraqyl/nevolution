@@ -130,17 +130,7 @@ func (d Database) AddBiome(biome_name string, biome_type string) (e myenum) {
 	}
 	return allClear
 }
-func (d Database) CheckIfBiomeExists(biome string) (e myenum) {
-	rows, err := d.dt.Query("select name from biomes where name = ?", biome)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	if !rows.Next() {
-		return noElem
-	}
-	return allClear
-}
+
 func (d Database) GradeID(grade string) (id int, e myenum) {
 	tx, err := d.dt.Begin()
 	if err != nil {
@@ -207,33 +197,8 @@ func (d Database) AddGradeToBiome(biome string, grade string, amount int) (e mye
 	if err != nil {
 		log.Fatal(err)
 	}
-	rows, err := tx.Query("select _id from grades where name = ?", grade)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	var grade_id int
-	if rows.Next() {
-		err = rows.Scan(&grade_id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		return noElem
-	}
-	rows2, err := tx.Query("select _id from biomes where name = ?", biome)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var biome_id int
-	if rows2.Next() {
-		err = rows2.Scan(&biome_id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	grade_id, _ := d.GradeID(grade)
+	biome_id, _ := d.BiomeID(biome)
 	rows3, err := tx.Query("select amount from biome_grades where biome_id = ? and grade_id = ?", biome_id, grade_id)
 	if err != nil {
 		log.Fatal(err)
@@ -244,8 +209,6 @@ func (d Database) AddGradeToBiome(biome string, grade string, amount int) (e mye
 	if rows3.Next() {
 		return redundantElem
 	}
-	rows.Close()
-	rows2.Close()
 	rows3.Close()
 	if err != nil {
 		log.Fatal(err)
@@ -280,13 +243,13 @@ func (d Database) DebugRemoveLater() {
 	if rows.Next() {
 		rows.Scan(&gid)
 	}
-	rows2, err := tx.Query("select _id from biomes where name = 'b'")
+	brows, err := tx.Query("select _id from biomes where name = 'b'")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows2.Close()
+	defer brows.Close()
 	var bid int
-	if rows2.Next() {
+	if brows.Next() {
 		rows.Scan(&bid)
 	}
 	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success) values(?, ?, ?, ?)")
@@ -365,19 +328,19 @@ func (d Database) Turn() (e myenum) {
 		}
 		maxes[bid] = msuc
 	}
-	rows2, err := tx.Query("select biome_id, grade_id, amount, success, _id from biome_grades")
+	graderows, err := tx.Query("select biome_id, grade_id, amount, success, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows2.Close()
+	defer graderows.Close()
 	ss, err := tx.Prepare("update biome_grades set amount = ? where _id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer ss.Close()
-	for rows2.Next() {
+	for graderows.Next() {
 		var bid, gid, am, suc, id, newam int
-		rows2.Scan(&bid, &gid, &am, &suc, &id)
+		graderows.Scan(&bid, &gid, &am, &suc, &id)
 		max := maxes[bid]
 		if max == suc {
 			newam = (am + suc)
@@ -401,19 +364,19 @@ func (d Database) Turn() (e myenum) {
 			}
 		}
 	}
-	rows3, err := tx.Query("select _id, grade_id, points_left from mutations")
+	mutrows, err := tx.Query("select _id, grade_id, points_left from mutations")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows3.Close()
+	defer mutrows.Close()
 	s, err := tx.Prepare("update mutations set points_left = ? where _id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	for rows3.Next() {
+	for mutrows.Next() {
 		var gid, pl, id, newpl int
-		rows3.Scan(&gid, &pl, &id)
+		mutrows.Scan(&gid, &pl, &id)
 		mutg := mmu[gid]
 		mut := mutg.numberTotal/(mutg.biomeTotal*10) + 1
 		if pl > 0 {
@@ -427,34 +390,27 @@ func (d Database) Turn() (e myenum) {
 	tx.Commit()
 	return allClear
 }
-func (d Database) GetGradeInto(grade string) (ginfo string, e myenum) {
+func (d Database) GetGradeInfo(grade string) (ginfo string, e myenum) {
 	var b string
 	tx, err := d.dt.Begin()
 	defer tx.Rollback()
 	if err != nil {
 		log.Fatal(err)
 	}
-	rows, err := tx.Query("select _id from grades where name = ?", grade)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	var id int
-	if rows.Next() {
-		rows.Scan(&id)
-	} else {
+	id, status := d.GradeID(grade)
+	if status != 1 {
 		return b, noElem
 	}
-	rows2, err := tx.Query("select biome_id from biome_grades where grade_id = ?", id)
+	brows, err := tx.Query("select biome_id from biome_grades where grade_id = ?", id)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows2.Close()
+	defer brows.Close()
 	var info strings.Builder
 	info.WriteString("Града представлена в следующих биомах:")
-	for rows2.Next() {
+	for brows.Next() {
 		var biomeid int
-		rows2.Scan(&biomeid)
+		brows.Scan(&biomeid)
 		rows3, err := tx.Query("select name, type from biomes where _id = ?", biomeid)
 		if err != nil {
 			log.Fatal(err)
@@ -534,12 +490,12 @@ func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}
 		return m, noElem
 	}
 	defer rows.Close()
-	rows2, err := d.dt.Query("select name from mutations where grade_id = ?", id)
+	mutrows, err := d.dt.Query("select name from mutations where grade_id = ?", id)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows2.Close()
-	for rows2.Next() {
+	defer mutrows.Close()
+	for mutrows.Next() {
 		var mutation string
 		rows.Scan(&mutation)
 		m[mutation] = struct{}{}
