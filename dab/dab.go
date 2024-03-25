@@ -380,14 +380,13 @@ func (d Database) Turn() (e myenum) {
 		rows2.Scan(&bid, &gid, &am, &suc, &id)
 		max := maxes[bid]
 		if max == suc {
-			newam = (newam + suc)
+			newam = (am + suc)
 		} else {
-			newam = (newam + suc - max)
+			newam = (am + suc - max)
 			if newam < 0 {
 				newam = 0
 			}
 		}
-		fmt.Printf("SO basically we have the following: %v, %v, %v, %v", am, newam, suc, max)
 		ss.Exec(newam, id)
 		v, ok := mmu[gid]
 		if ok {
