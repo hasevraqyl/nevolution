@@ -486,7 +486,7 @@ func main() {
 	for _, v := range registeredCommands {
 		err := dg.ApplicationCommandDelete(dg.State.User.ID, info.GuildID, v.ID)
 		if err != nil {
-			log.Panicf("cannot delete '%v' command: %v", v.Name, err)
+			log.Panicf("\n cannot delete '%v' command: %v", v.Name, err)
 		}
 	}
 	fmt.Println("\n shutdown.")
