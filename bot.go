@@ -162,6 +162,11 @@ var (
 					Description: "Название грады",
 					Required:    true,
 				},
+				{Type: discordgo.ApplicationCommandOptionString,
+					Name:        "biome_name",
+					Description: "Название биома",
+					Required:    true,
+				},
 			},
 		},
 	}
