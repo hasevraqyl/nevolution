@@ -445,16 +445,7 @@ func (d Database) GetGradeInfo(grade string) (ginfo string, e myenum) {
 	tx.Commit()
 	return b, allClear
 }
-func (d Database) StartMutation(grade string, mutation string) {
-	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	var id int
-	for rows.Next() {
-		rows.Scan(&id)
-	}
+func (d Database) StartMutation(gid string, mutation string) {
 	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -464,7 +455,7 @@ func (d Database) StartMutation(grade string, mutation string) {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	_, err = s.Exec(id, mutation, 300)
+	_, err = s.Exec(gid, mutation, 300)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -473,19 +464,12 @@ func (d Database) StartMutation(grade string, mutation string) {
 		log.Fatal(err)
 	}
 }
-func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, e myenum) {
+func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, gid int, e myenum) {
 	m := make(map[string]struct{})
-	rows, err := d.dt.Query("select _id from grades where name = ?", grade)
-	if err != nil {
-		log.Fatal(err)
+	id, status := d.GradeID(grade)
+	if status == 2 {
+		return m, id, noElem
 	}
-	var id int
-	if rows.Next() {
-		rows.Scan(&id)
-	} else {
-		return m, noElem
-	}
-	defer rows.Close()
 	mutrows, err := d.dt.Query("select name from mutations where grade_id = ?", id)
 	if err != nil {
 		log.Fatal(err)
@@ -493,8 +477,8 @@ func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}
 	defer mutrows.Close()
 	for mutrows.Next() {
 		var mutation string
-		rows.Scan(&mutation)
+		mutrows.Scan(&mutation)
 		m[mutation] = struct{}{}
 	}
-	return m, allClear
+	return m, id, allClear
 }

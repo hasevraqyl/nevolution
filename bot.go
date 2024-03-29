@@ -68,14 +68,14 @@ func mutation(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Fatal(err)
 	}
 }
-func mutButton(name string, mut string) (button discordgo.Button) {
+func mutButton(gid int, mut string, bid int) (button discordgo.Button) {
 	return discordgo.Button{
 		Emoji: discordgo.ComponentEmoji{
 			Name: "🧬",
 		},
 		Label:    mut,
 		Style:    discordgo.PrimaryButton,
-		CustomID: "newm@|" + name + "|" + mut,
+		CustomID: "newm@|" + fmt.Sprint(gid) + "|" + mut + "|" + fmt.Sprint(bid),
 	}
 
 }
@@ -384,58 +384,64 @@ var (
 				optionMap[opt.Name] = opt
 			}
 			var absentMutations []string
-			if option, ok := optionMap["grade_name"]; ok {
-				b, status := d.GetGradeMutations(option.StringValue())
+			if biome, ok := optionMap["biome_name"]; ok {
+				bid, status := d.BiomeID(biome.StringValue())
 				if status == 1 {
-					for key := range allMutations {
-						if _, ok := b[key]; !ok {
-							absentMutations = append(absentMutations, key)
-						}
-					}
-					var cmp []discordgo.MessageComponent
-					if len(absentMutations) > 5 {
-						var overarchingArray [][]string
-						c := (len(absentMutations) / 5) + 1
-						for i := 0; i < len(absentMutations)-c; {
-							overarchingArray = append(overarchingArray, absentMutations[i:i+c])
-							i = i + c
-						}
-						for _, v := range overarchingArray {
-							var comp []discordgo.MessageComponent
-							for _, v2 := range v {
-								comp = append(comp, mutButton(option.StringValue(), v2))
+					if option, ok := optionMap["grade_name"]; ok {
+						b, gid, status := d.GetGradeMutations(option.StringValue())
+						if status == 1 {
+							for key := range allMutations {
+								if _, ok := b[key]; !ok {
+									absentMutations = append(absentMutations, key)
+								}
 							}
-							cmp = append(cmp, discordgo.ActionsRow{Components: comp})
-						}
-					} else {
-						for _, v := range absentMutations {
-							cmp = append(cmp, mutButton(option.StringValue(), v))
-						}
-					}
-					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{
-							Content: fmt.Sprintf("блядь поггль это пездец, два часа над этим корчусь. энивей, следующие мутации доступны для грады %v, выберите одну", option.StringValue()),
-							Flags:   discordgo.MessageFlagsEphemeral,
-							Components: []discordgo.MessageComponent{
-								discordgo.ActionsRow{
-									Components: cmp,
+							var cmp []discordgo.MessageComponent
+							if len(absentMutations) > 5 {
+								var overarchingArray [][]string
+								c := (len(absentMutations) / 5) + 1
+								for i := 0; i < len(absentMutations)-c; {
+									overarchingArray = append(overarchingArray, absentMutations[i:i+c])
+									i = i + c
+								}
+								for _, v := range overarchingArray {
+									var comp []discordgo.MessageComponent
+									for _, v2 := range v {
+										comp = append(comp, mutButton(gid, v2, bid))
+									}
+									cmp = append(cmp, discordgo.ActionsRow{Components: comp})
+								}
+							} else {
+								for _, v := range absentMutations {
+									cmp = append(cmp, mutButton(gid, v, bid))
+								}
+							}
+							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("блядь поггль это пездец, два часа над этим корчусь. энивей, следующие мутации доступны для грады %v, выберите одну", option.StringValue()),
+									Flags:   discordgo.MessageFlagsEphemeral,
+									Components: []discordgo.MessageComponent{
+										discordgo.ActionsRow{
+											Components: cmp,
+										},
+									},
 								},
-							},
-						},
-					})
-					if err != nil {
-						log.Fatal(err)
+							})
+							if err != nil {
+								log.Fatal(err)
+							}
+						} else {
+							s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: "произошла какая-то хрень",
+								},
+							})
+						}
 					}
-				} else {
-					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{
-							Content: "произошла какая-то хрень",
-						},
-					})
 				}
 			}
+
 		},
 	}
 )
