@@ -83,6 +83,24 @@ func mutButton(gid int, mut string, bid int) (button discordgo.Button) {
 var (
 	commands = []*discordgo.ApplicationCommand{
 		{
+			Name:        "rename-grade",
+			Description: "переименовывает граду",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "grade_name",
+					Description: "текущее Название грады",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "new_name",
+					Description: "новое название грады",
+					Required:    true,
+				},
+			},
+		},
+		{
 			Name:        "rollback",
 			Description: "откатывает",
 		},
