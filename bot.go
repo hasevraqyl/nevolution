@@ -7,6 +7,7 @@ import (
 	"nevolution/dab"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -57,25 +58,33 @@ func biome(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 func mutation(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	rows := strings.Split(i.MessageComponentData().CustomID, "|")
-	d.StartMutation(rows[1], rows[2])
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	bid, err := strconv.Atoi(rows[4])
+	if err != nil {
+		log.Fatal(err)
+	}
+	gid, err := strconv.Atoi(rows[2])
+	if err != nil {
+		log.Fatal(err)
+	}
+	d.StartMutation(bid, gid, rows[3])
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Начато исследование мутации %v в граде %v", rows[2], rows[1]),
+			Content: fmt.Sprintf("Начато исследование мутации %v в граде %v", rows[2], rows[5]),
 		},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 }
-func mutButton(gid int, mut string, bid int) (button discordgo.Button) {
+func mutButton(gid int, mut string, bid int, grade string) (button discordgo.Button) {
 	return discordgo.Button{
 		Emoji: discordgo.ComponentEmoji{
 			Name: "🧬",
 		},
 		Label:    mut,
 		Style:    discordgo.PrimaryButton,
-		CustomID: "newm@|" + fmt.Sprint(gid) + "|" + mut + "|" + fmt.Sprint(bid),
+		CustomID: "newm@|" + fmt.Sprint(gid) + "|" + mut + "|" + fmt.Sprint(bid) + "|" + grade,
 	}
 
 }
@@ -424,13 +433,13 @@ var (
 								for _, v := range overarchingArray {
 									var comp []discordgo.MessageComponent
 									for _, v2 := range v {
-										comp = append(comp, mutButton(gid, v2, bid))
+										comp = append(comp, mutButton(gid, v2, bid, option.StringValue()))
 									}
 									cmp = append(cmp, discordgo.ActionsRow{Components: comp})
 								}
 							} else {
 								for _, v := range absentMutations {
-									cmp = append(cmp, mutButton(gid, v, bid))
+									cmp = append(cmp, mutButton(gid, v, bid, option.StringValue()))
 								}
 							}
 							err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

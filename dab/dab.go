@@ -445,12 +445,12 @@ func (d Database) GetGradeInfo(grade string) (ginfo string, e myenum) {
 	tx.Commit()
 	return b, allClear
 }
-func (d Database) StartMutation(gid string, mutation string) {
+func (d Database) StartMutation(bid int, gid int, mutation string) {
 	tx, err := d.dt.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := tx.Prepare("insert into mutations (grade_id, name, points_left) values (?, ?, ?)")
+	s, err := tx.Prepare("insert into mutations (grade_id, biome_id, name, points_left) values (?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}

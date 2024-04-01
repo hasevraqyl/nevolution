@@ -7,7 +7,7 @@ drop table if exists biome_grades;
 drop table if exists mutations;
 """
 migration = """
-create table mutations (_id integer primary key, grade_id integer not null, name text not null, points_left integer not null);
+create table mutations (_id integer primary key, grade_id integer not null, biome_id integer not null, name text not null, points_left integer not null);
 create table grades (_id integer primary key, name text not null);
 create table niches (_id integer primary key, grade_id integer not null, amount integer not null, success integer not null);
 create table biomes (_id integer primary key, name text not null, type text not null);
