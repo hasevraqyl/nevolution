@@ -404,6 +404,43 @@ var (
 				},
 			})
 		},
+		"rename-grade": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+			if gr_old, ok := optionMap["grade_name"]; ok {
+				golid, status := d.GradeID(gr_old.StringValue())
+				if status == 1 {
+					if gr_new, ok := optionMap["new_name"]; ok {
+						status := d.RenameGrade(golid, gr_new.StringValue())
+						if status == 1 {
+							s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("Града %v успешно переименована в %v", gr_old.StringValue(), gr_new.StringValue()),
+								},
+							})
+						} else {
+							s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("Града %v уже существует", gr_new.StringValue()),
+								},
+							})
+						}
+					}
+				} else {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: fmt.Sprintf("Грады %v не существует", gr_old.StringValue()),
+						},
+					})
+				}
+			}
+		},
 		"new-mutation": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := i.ApplicationCommandData().Options
 			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))

@@ -482,3 +482,26 @@ func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}
 	}
 	return m, id, allClear
 }
+func (d Database) RenameGrade(gid int, name string) (e myenum) {
+	tx, err := d.dt.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, status := d.GradeID(name)
+	if status == 2 {
+		gradesupdate, err := tx.Prepare("update grades set name = ? where _id = ?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		biomesupdate, err := tx.Prepare("update biome_grades set grade_name = ? where grade_id = ?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		gradesupdate.Exec(name, gid)
+		biomesupdate.Exec(name, gid)
+		tx.Commit()
+		return allClear
+	}
+	return redundantElem
+}
