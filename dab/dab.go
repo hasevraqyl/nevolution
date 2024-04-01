@@ -360,7 +360,7 @@ func (d Database) Turn() (e myenum) {
 			}
 		}
 	}
-	mutrows, err := tx.Query("select _id, grade_id, points_left from mutations")
+	mutrows, err := tx.Query("select _id, grade_id, points_left, biome_id from mutations")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -371,14 +371,56 @@ func (d Database) Turn() (e myenum) {
 	}
 	defer s.Close()
 	for mutrows.Next() {
-		var gid, pl, id, newpl int
-		mutrows.Scan(&gid, &pl, &id)
+		var gid, pl, id, bid, newpl int
+		mutrows.Scan(&gid, &pl, &id, &bid)
 		mutg := mmu[gid]
 		mut := mutg.numberTotal/(mutg.biomeTotal*10) + 1
 		if pl > 0 {
 			newpl = pl - mut
-			if newpl < 0 {
-				newpl = 0
+			if newpl <= 0 {
+				var gname string
+				name, err := tx.Query("select name from grades where _id = ?", gid)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer name.Close()
+				name.Next()
+				name.Scan(&gname)
+				status := d.AddGrade(gname + "1")
+				i := 2
+				for status != 2 {
+					status = d.AddGrade(gname + fmt.Sprint(i))
+					i++
+				}
+				ngid, _ := d.GradeID(gname + fmt.Sprint(i))
+				mutst, err := tx.Prepare("update mutations set grade_id = ?, points_left = 0 where grade+id = ?")
+				if err != nil {
+					log.Fatal(err)
+				}
+				mutst.Exec(ngid, gid)
+				mutstinsert, err := tx.Prepare("insert into mutations(grade_id, biome_id, name, points_left) values(?, ?, ?, ?)")
+				if err != nil {
+					log.Fatal(err)
+				}
+				rowsmut, err := tx.Query("select name from mutations where grade_id = ?", gid)
+				if err != nil {
+					log.Fatal(err)
+				}
+				var mutname string
+				defer rowsmut.Close()
+				for rowsmut.Next() {
+					rowsmut.Scan(&mutname)
+					mutstinsert.Exec(ngid, 0, mutname, 0)
+				}
+				var bname string
+				biname, err := tx.Query("select name from grades where _id = ?", gid)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer biname.Close()
+				biname.Next()
+				biname.Scan(&bname)
+				_ = d.AddGradeToBiome(gname, bname, 1)
 			}
 			s.Exec(newpl, id)
 		}
