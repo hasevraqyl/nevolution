@@ -27,8 +27,8 @@ type Database struct {
 }
 
 type Migration struct {
-	Rollback string
-	Upstart  string
+	Rollback  string
+	Migration string
 }
 
 type Grade struct {
@@ -55,6 +55,11 @@ func (e myenum) Text(text string) string {
 }
 func (d Database) Rollback() {
 	f := "./migrations.toml"
+	tx, err := d.dt.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		log.Fatal(err)
+	}
 	if _, err := os.Stat(f); err != nil {
 		log.Fatal(err)
 	}
@@ -63,15 +68,18 @@ func (d Database) Rollback() {
 	}
 	os.Remove("./nev.db")
 	sqlStmt := info.Rollback
-	_, err := d.dt.Exec(sqlStmt)
+	_, err = tx.Exec(sqlStmt)
+	fmt.Println("works before this line")
 	if err != nil {
 		log.Fatal(err)
 	}
-	nsqlStmt := info.Upstart
-	_, err = d.dt.Exec(nsqlStmt)
+	nsqlStmt := info.Migration
+	_, err = tx.Exec(nsqlStmt)
+	fmt.Println("works before this line 2")
 	if err != nil {
 		log.Fatal(err)
 	}
+	tx.Commit()
 }
 func (d Database) CloseDB() {
 	d.dt.Close()
@@ -230,25 +238,31 @@ func (d Database) DebugRemoveLater() {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
+	fmt.Println("right here")
 	rows, err := tx.Query("select _id from grades where name = 'g'")
+	fmt.Println("right there")
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("perhaps here?")
 	defer rows.Close()
 	var gid int
 	if rows.Next() {
 		rows.Scan(&gid)
 	}
+	fmt.Println("probably here")
 	brows, err := tx.Query("select _id from biomes where name = 'b'")
+	fmt.Println("somehow here too")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer brows.Close()
 	var bid int
 	if brows.Next() {
-		rows.Scan(&bid)
+		brows.Scan(&bid)
 	}
 	s, err := tx.Prepare("insert into biome_grades(biome_id, grade_id, amount, success) values(?, ?, ?, ?)")
+	fmt.Println("and here too")
 	if err != nil {
 		log.Fatal(err)
 	}
