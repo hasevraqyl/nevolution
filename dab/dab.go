@@ -86,12 +86,12 @@ func (d Database) CloseDB() {
 }
 
 func (d Database) AddGrade(grade string) (e myenum) {
-	rows, err := d.dt.Query("select name from grades where name = ?", grade)
+	rowse, err := d.dt.Query("select name from grades where name = ?", grade)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
-	for rows.Next() {
+	defer rowse.Close()
+	for rowse.Next() {
 		return redundantElem
 	}
 	tx, err := d.dt.Begin()
