@@ -181,14 +181,14 @@ func (d Database) GradeAmount(gid int, bid int) (a int, e myenum) {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query("select amount from biome_grades where grade_id = ? and biome_id = ?", gid, bid)
+	orows, err := tx.Query("select amount from biome_grades where grade_id = ? and biome_id = ?", gid, bid)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer orows.Close()
 	var amount int
-	if rows.Next() {
-		rows.Scan(&amount)
+	if orows.Next() {
+		orows.Scan(&amount)
 	} else {
 		return amount, noElem
 	}
