@@ -239,16 +239,16 @@ func (d Database) DebugRemoveLater() {
 	}
 	defer tx.Rollback()
 	fmt.Println("right here")
-	rows, err := tx.Query("select _id from grades where name = 'g'")
+	rowse, err := tx.Query("select _id from grades where name = 'g'")
 	fmt.Println("right there")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("perhaps here?")
-	defer rows.Close()
+	defer rowse.Close()
 	var gid int
-	if rows.Next() {
-		rows.Scan(&gid)
+	if rowse.Next() {
+		rowse.Scan(&gid)
 	}
 	fmt.Println("probably here")
 	brows, err := tx.Query("select _id from biomes where name = 'b'")
@@ -275,17 +275,17 @@ func GetSuccess(gid int, biome string) (success int) {
 	return 10
 }
 func (d Database) Meteor() (e myenum) {
-	rows, err := d.dt.Query("select amount, _id from biome_grades")
+	rowse, err := d.dt.Query("select amount, _id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer rowse.Close()
 	s := rand.NewSource(time.Now().Unix())
 	r := rand.New(s)
-	for rows.Next() {
+	for rowse.Next() {
 		var number int
 		var id int
-		rows.Scan(&number, &id)
+		rowse.Scan(&number, &id)
 		i := int64(number) - (r.Int63n(300) + 300)
 		if i < 0 {
 			i = 0
@@ -319,14 +319,14 @@ func (d Database) Turn() (e myenum) {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query("select distinct biome_id from biome_grades")
+	rowse, err := tx.Query("select distinct biome_id from biome_grades")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
-	for rows.Next() {
+	defer rowse.Close()
+	for rowse.Next() {
 		var bid int
-		rows.Scan(&bid)
+		rowse.Scan(&bid)
 		max, err := tx.Query("select MAX(success) from biome_grades where biome_id = ?", bid)
 		if err != nil {
 			log.Fatal(err)
