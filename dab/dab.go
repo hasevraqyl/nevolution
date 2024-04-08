@@ -53,6 +53,7 @@ func (e myenum) Text(text string) string {
 		return "Такой элемент уже есть"
 	}
 }
+
 func (d Database) Rollback() {
 	f := "./migrations.toml"
 	tx, err := d.dt.Begin()
@@ -69,13 +70,27 @@ func (d Database) Rollback() {
 	os.Remove("./nev.db")
 	sqlStmt := info.Rollback
 	_, err = tx.Exec(sqlStmt)
-	fmt.Println("works before this line")
 	if err != nil {
 		log.Fatal(err)
 	}
-	nsqlStmt := info.Migration
-	_, err = tx.Exec(nsqlStmt)
-	fmt.Println("works before this line 2")
+	tx.Commit()
+}
+func (d Database) StartNew() {
+	f := "./migrations.toml"
+	tx, err := d.dt.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := os.Stat(f); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := toml.DecodeFile(f, &info); err != nil {
+		log.Fatal(err)
+	}
+	os.Remove("./nev.db")
+	sqlStmt := info.Migration
+	_, err = tx.Exec(sqlStmt)
 	if err != nil {
 		log.Fatal(err)
 	}

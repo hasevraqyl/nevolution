@@ -114,6 +114,10 @@ var (
 			Description: "откатывает",
 		},
 		{
+			Name:        "startup",
+			Description: "запускает новую игру",
+		},
+		{
 			Name:        "turn",
 			Description: "делает ход",
 		},
@@ -200,11 +204,20 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"rollback": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			d.Rollback()
-			d.DebugRemoveLater()
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "# успешно откачено",
+				},
+			})
+		},
+		"startup": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			d.StartNew()
+			d.DebugRemoveLater()
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "# успешно запущено",
 				},
 			})
 		},
