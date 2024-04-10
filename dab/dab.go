@@ -35,6 +35,26 @@ type Grade struct {
 	numberTotal int
 	biomeTotal  int
 }
+type Set[T comparable] struct {
+	Content map[T]struct{}
+}
+
+func (set Set[T]) Init() {
+	set.Content = make(map[T]struct{})
+}
+func (set Set[T]) Insert(input T) {
+	set.Content[input] = struct{}{}
+}
+func (set Set[T]) Remove(input T) {
+	delete(set.Content, input)
+
+}
+func (set Set[T]) Contains(input T) bool {
+	if _, ok := set.Content[input]; ok {
+		return true
+	}
+	return false
+}
 
 var info Migration
 
