@@ -556,10 +556,11 @@ func (d Database) StartMutation(bid int, gid int, mutation string) {
 	}
 }
 func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, gid int, e myenum) {
-	m := make(map[string]struct{})
+	mp := Set[string]{}
+	mp.Init()
 	id, status := d.GradeID(grade)
 	if status == 2 {
-		return m, id, noElem
+		return mp.Content, id, noElem
 	}
 	mutrows, err := d.dt.Query("select name from mutations where grade_id = ?", id)
 	if err != nil {
@@ -569,9 +570,9 @@ func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}
 	for mutrows.Next() {
 		var mutation string
 		mutrows.Scan(&mutation)
-		m[mutation] = struct{}{}
+		mp.Insert(mutation)
 	}
-	return m, id, allClear
+	return mp.Content, id, allClear
 }
 func (d Database) RenameGrade(gid int, name string) (e myenum) {
 	tx, err := d.dt.Begin()
