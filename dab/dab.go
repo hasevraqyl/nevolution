@@ -39,7 +39,7 @@ type Set[T comparable] struct {
 	Content map[T]struct{}
 }
 
-func (set Set[T]) Init() {
+func (set *Set[T]) Init() {
 	set.Content = make(map[T]struct{})
 }
 func (set Set[T]) Insert(input T) {
