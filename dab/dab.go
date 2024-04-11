@@ -39,6 +39,11 @@ type Set[T comparable] struct {
 	Content map[T]struct{}
 }
 
+func NewSet[T comparable]() Set[T] {
+	s := make(map[T]struct{})
+	return Set[T]{s}
+}
+
 func (set *Set[T]) Init() {
 	set.Content = make(map[T]struct{})
 }
@@ -556,8 +561,7 @@ func (d Database) StartMutation(bid int, gid int, mutation string) {
 	}
 }
 func (d Database) GetGradeMutations(grade string) (mutations map[string]struct{}, gid int, e myenum) {
-	mp := Set[string]{}
-	mp.Init()
+	mp := NewSet[string]()
 	id, status := d.GradeID(grade)
 	if status == 2 {
 		return mp.Content, id, noElem
