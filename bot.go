@@ -21,7 +21,7 @@ type Init struct {
 
 var info Init
 var d dab.Database
-var allMutations map[string]struct{}
+var allMutations dab.Set[string]
 
 func init() {
 	f := "setup_secret.toml"
@@ -36,9 +36,9 @@ func init() {
 		log.Fatal(err)
 	}
 	d = dab.Wrap(db)
-	allMutations = make(map[string]struct{})
-	allMutations["kill"] = struct{}{}
-	allMutations["eat"] = struct{}{}
+
+	allMutations.Content["kill"] = struct{}{}
+	allMutations.Content["eat"] = struct{}{}
 }
 
 var dg *discordgo.Session
@@ -467,7 +467,7 @@ var (
 					if option, ok := optionMap["grade_name"]; ok {
 						b, gid, status := d.GetGradeMutations(option.StringValue())
 						if status == 1 {
-							for key := range allMutations {
+							for key := range allMutations.Content {
 								if _, ok := b[key]; !ok {
 									absentMutations = append(absentMutations, key)
 								}
